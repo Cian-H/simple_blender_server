@@ -1,0 +1,44 @@
+import bpy  # type: ignore
+
+
+{{.ModelCode}}
+
+
+def guarded_model() -> bpy.types.Object:
+    try:
+        out = model()  # type: ignore
+        if out is None:
+            raise TypeError("Function `model` cannot return type `None`.")
+        return out
+    except NameError:
+        raise NotImplementedError("No function named `model` was provided!")
+
+
+def export_to_stl(obj: bpy.types.Object):
+    """
+    Export a Blender object as an STL binary blob.
+
+    Parameters:
+        obj (bpy.types.Object): The object to export
+
+    Returns:
+        bytes: Binary data of the STL file
+    """
+    import tempfile
+    import os
+
+    # Ensure the object is the only object, is selected, and is active
+    bpy.ops.object.select_all(action="SELECT")
+    obj.select_set(False)
+    bpy.ops.object.delete()
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+
+    bpy.ops.wm.stl_export(filepath="{{.Filename}}")
+
+
+def main():
+    export_to_stl(guarded_model())
+
+
+main()
