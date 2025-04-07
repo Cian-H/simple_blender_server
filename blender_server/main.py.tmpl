@@ -24,9 +24,6 @@ def export_to_stl(obj: bpy.types.Object):
     Returns:
         bytes: Binary data of the STL file
     """
-    import tempfile
-    import os
-
     # Ensure the object is the only object, is selected, and is active
     bpy.ops.object.select_all(action="SELECT")
     obj.select_set(False)
