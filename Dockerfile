@@ -11,5 +11,5 @@ RUN apk add blender
 WORKDIR /root/
 COPY --from=builder /app/server .
 COPY main.py.tmpl .
-EXPOSE 8080
+EXPOSE 1212
 CMD ["./server"]
