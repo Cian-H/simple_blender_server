@@ -1,6 +1,17 @@
-# Engineering Assistant
-A work-in-progress engineering assistant for helping with basic prototyping.
+# Simple Blender render server
+This is an extremely simple little blender render server. It accepts a POST request
+on port 1212 at the `create_model` endpoint. A request to this endpoint returns a
+binary blob of the STL file for the model produced by that code. The JSON paylod
+for the request must contain the key "model_code" with a string value containing a
+string of python code for rendering a model.
 
-# OpenWebUI Blender Render Plugin
-A prototype plugin got the OpenWebUI LLM web ui, that allows agents to render models from
-blender script code written using python's `bpy` package.
+The code given must contain a function with the signature `model() -> bpy.types.Object`.
+
+# Example usage
+
+As an example, this container can be used to create a simple model of a cube using the
+following command:
+
+```sh
+curl -X POST http://localhost:1212/create_model -H "Content-Type: application/json" -d '{"model_code":"def model(): bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='WORLD', location=(0, 0, 0)); return bpy.context.object"}' --output model.stl
+```
