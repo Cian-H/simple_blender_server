@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"text/template"
 )
 
@@ -25,8 +24,6 @@ func main() {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
-
-const ModelPath = "./model.glb"
 
 type Request struct {
 	ModelCode string `json:"model_code"`
@@ -60,16 +57,18 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Successfully parsed request: ModelCode=\n```\n%s\n```\n", req.ModelCode)
 
-	absModelPath, err := filepath.Abs(ModelPath)
+	tempFile, err := os.CreateTemp("", "model*.glb")
 	if err != nil {
-		log.Printf("Error getting absolute path: %v", err)
+		log.Printf("Error creating temp file: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+	tempFilePath := tempFile.Name()
+	tempFile.Close()
+	log.Printf("Using temporary file path: %s", tempFilePath)
+	defer os.Remove(tempFilePath)
 
-	_ = os.Remove(absModelPath)
-
-	model_expression, err := create_glb(req.ModelCode, absModelPath)
+	model_expression, err := create_glb(req.ModelCode, tempFilePath)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error parsing templates: %v", err), http.StatusInternalServerError)
 		return
@@ -103,13 +102,13 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Blender command executed; output: %s", string(output))
 
-	if _, err := os.Stat(absModelPath); os.IsNotExist(err) {
-		log.Printf("Error: GLB file was not created at %s", absModelPath)
+	if _, err := os.Stat(tempFilePath); os.IsNotExist(err) {
+		log.Printf("Error: GLB file was not created at %s", tempFilePath)
 		http.Error(w, "Failed to generate GLB file", http.StatusInternalServerError)
 		return
 	}
 
-	glbData, err := os.ReadFile(absModelPath)
+	glbData, err := os.ReadFile(tempFilePath)
 	if err != nil {
 		log.Printf("Error reading GLB file: %v", err)
 		http.Error(w, "Error reading generated GLB file", http.StatusInternalServerError)
@@ -119,7 +118,7 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 	log.Printf("GLB file read successfully, size: %d bytes", len(glbData))
 
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filepath.Base(ModelPath)))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=model.glb"))
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(glbData)))
 
 	if _, err := w.Write(glbData); err != nil {
