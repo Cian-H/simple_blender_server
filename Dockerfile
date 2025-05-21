@@ -7,7 +7,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o server ./main.go
 
 FROM alpine:latest
 RUN apk update
-RUN apk add blender
+RUN apk add blender py3-pip
+RUN pip install numpy scipy trimesh
+RUN del py3-pip
+
 WORKDIR /root/
 COPY --from=builder /app/server .
 COPY main.py.tmpl .
