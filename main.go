@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"text/template"
 )
 
@@ -96,16 +97,16 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 
 	cmd := exec.Command("blender", "-b", "--python", tmpFile.Name())
 	output, err := cmd.CombinedOutput()
-	if err != nil {
-		blenderError := string(output)
-		log.Printf("Command execution failed: %v, Output: %s", err, blenderError)
+	blenderOutput := string(output)
+	if err != nil || strings.Contains(blenderOutput, "Traceback") || strings.Contains(blenderOutput, "Error:") {
+		log.Printf("Command execution failed: %v, Output: %s", err, blenderOutput)
 		errorResponse := struct {
 			Error      string `json:"error"`
 			BlenderLog string `json:"blender_log"`
 			ExitCode   string `json:"exit_code"`
 		}{
 			Error:      "Blender render failed",
-			BlenderLog: blenderError,
+			BlenderLog: blenderOutput,
 			ExitCode:   err.Error(),
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -114,22 +115,27 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Blender command executed; output: %s", string(output))
+	fileInfo, err := os.Stat(tempFilePath)
+	if os.IsNotExist(err) || fileInfo.Size() == 0 {
+		log.Printf("Error: GLB file was not created or is empty at %s", tempFilePath)
 
-	if _, err := os.Stat(tempFilePath); os.IsNotExist(err) {
-		log.Printf("Error: GLB file was not created at %s", tempFilePath)
 		errorResponse := struct {
-			Error   string `json:"error"`
-			Details string `json:"details"`
+			Error      string `json:"error"`
+			Details    string `json:"details"`
+			BlenderLog string `json:"blender_log"`
 		}{
-			Error:   "Failed to generate GLB file",
-			Details: "The Blender process completed but did not generate a model file. This typically indicates an error in the model code.",
+			Error:      "Failed to generate GLB file",
+			Details:    "The Blender process completed but did not generate a valid model file. This typically indicates an error in the model code.",
+			BlenderLog: string(output),
 		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		json.NewEncoder(w).Encode(errorResponse)
 		return
 	}
+
+	log.Printf("Blender command executed; output: %s", string(output))
 
 	glbData, err := os.ReadFile(tempFilePath)
 	if err != nil {
