@@ -36,7 +36,7 @@ def export_to_glb(obj: bpy.types.Object):
     bpy.ops.export_scene.gltf(
         filepath="{{.Filename}}",
         export_format="GLB",
-        export_draco_mesh_compression_enable=True,
+        # export_draco_mesh_compression_enable=True,
         export_apply=True,
     )
 
