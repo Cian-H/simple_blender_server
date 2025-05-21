@@ -26,7 +26,7 @@ func main() {
 	}
 }
 
-const ModelPath = "./model.stl"
+const ModelPath = "./model.glb"
 
 type Request struct {
 	ModelCode string `json:"model_code"`
@@ -44,7 +44,7 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Received request body (first 100 chars): %s", truncateString(string(bodyBytes), 100))
+	log.Printf("Received request body: %s", string(bodyBytes))
 
 	// Close the original body and create a new one with the same data
 	r.Body.Close()
@@ -58,7 +58,7 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Successfully parsed request: ModelCode (first 50 chars)=%s", truncateString(req.ModelCode, 50))
+	log.Printf("Successfully parsed request: ModelCode=\n```\n%s\n```\n", req.ModelCode)
 
 	absModelPath, err := filepath.Abs(ModelPath)
 	if err != nil {
@@ -69,13 +69,13 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 
 	_ = os.Remove(absModelPath)
 
-	model_expression, err := create_stl(req.ModelCode, absModelPath)
+	model_expression, err := create_glb(req.ModelCode, absModelPath)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error parsing templates: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("Python expression generated (first 100 chars): %s", truncateString(model_expression, 100))
+	log.Printf("Python expression generated:\n```\n%s\n```\n", model_expression)
 
 	tmpFile, err := os.CreateTemp("", "blender_*.py")
 	if err != nil {
@@ -101,31 +101,31 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Blender command executed: output (first 200 chars): %s", truncateString(string(output), 200))
+	log.Printf("Blender command executed; output: %s", string(output))
 
 	if _, err := os.Stat(absModelPath); os.IsNotExist(err) {
-		log.Printf("Error: STL file was not created at %s", absModelPath)
-		http.Error(w, "Failed to generate STL file", http.StatusInternalServerError)
+		log.Printf("Error: GLB file was not created at %s", absModelPath)
+		http.Error(w, "Failed to generate GLB file", http.StatusInternalServerError)
 		return
 	}
 
-	stlData, err := os.ReadFile(absModelPath)
+	glbData, err := os.ReadFile(absModelPath)
 	if err != nil {
-		log.Printf("Error reading STL file: %v", err)
-		http.Error(w, "Error reading generated STL file", http.StatusInternalServerError)
+		log.Printf("Error reading GLB file: %v", err)
+		http.Error(w, "Error reading generated GLB file", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("STL file read successfully, size: %d bytes", len(stlData))
+	log.Printf("GLB file read successfully, size: %d bytes", len(glbData))
 
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filepath.Base(ModelPath)))
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(stlData)))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(glbData)))
 
-	if _, err := w.Write(stlData); err != nil {
+	if _, err := w.Write(glbData); err != nil {
 		log.Printf("Failed to write response: %v", err)
 	} else {
-		log.Printf("STL file sent successfully")
+		log.Printf("GLB file sent successfully")
 	}
 }
 
@@ -134,7 +134,7 @@ type ModelTemplateVars struct {
 	Filename  string
 }
 
-func create_stl(model_code string, filename string) (string, error) {
+func create_glb(model_code string, filename string) (string, error) {
 	t := template.New("main.py.tmpl")
 
 	t, err := t.ParseFiles("main.py.tmpl")
@@ -157,11 +157,4 @@ func create_stl(model_code string, filename string) (string, error) {
 
 	result := buf.String()
 	return result, nil
-}
-
-func truncateString(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen] + "..."
 }

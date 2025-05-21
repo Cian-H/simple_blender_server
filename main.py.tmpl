@@ -14,15 +14,12 @@ def guarded_model() -> bpy.types.Object:
         raise NotImplementedError("No function named `model` was provided!")
 
 
-def export_to_stl(obj: bpy.types.Object):
+def export_to_glb(obj: bpy.types.Object):
     """
-    Export a Blender object as an STL binary blob.
+    Export a Blender object as a GLB binary blob.
 
     Parameters:
         obj (bpy.types.Object): The object to export
-
-    Returns:
-        bytes: Binary data of the STL file
     """
     # Ensure the object is the only object, is selected, and is active
     bpy.ops.object.select_all(action="SELECT")
@@ -31,11 +28,16 @@ def export_to_stl(obj: bpy.types.Object):
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
 
-    bpy.ops.wm.stl_export(filepath="{{.Filename}}")
+    bpy.ops.export_scene.gltf(
+        filepath="{{.Filename}}",
+        export_format="GLB",
+        export_draco_mesh_compression_enable=True,
+        export_apply=True,
+    )
 
 
 def main():
-    export_to_stl(guarded_model())
+    export_to_glb(guarded_model())
 
 
 main()
