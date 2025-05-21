@@ -13,5 +13,5 @@ As an example, this container can be used to create a simple model of a cube usi
 following command:
 
 ```sh
-curl -X POST http://localhost:1212/create_model -H "Content-Type: application/json" -d '{"model_code":"def model(): bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='WORLD', location=(0, 0, 0)); return bpy.context.object"}' --output model.glb
+curl -X POST http://localhost:1212/create_model -H "Content-Type: application/json" -d '{"model_code":"def model(): bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, location=(0, 0, 0)); return bpy.context.object"}' --output model.glb
 ```
