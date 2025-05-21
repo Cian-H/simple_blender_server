@@ -74,7 +74,7 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Python expression generated:\n```\n%s\n```\n", model_expression)
+	log.Printf("Python expression generated.")
 
 	tmpFile, err := os.CreateTemp("", "blender_*.py")
 	if err != nil {
