@@ -12,6 +12,8 @@ import (
 	"text/template"
 )
 
+const TEMPLATE_FILE = "main.py.tmpl"
+
 func main() {
 	http.HandleFunc("/create_model", handleCreateModel)
 
@@ -155,9 +157,9 @@ type ModelTemplateVars struct {
 }
 
 func create_glb(model_code string, filename string) (string, error) {
-	t := template.New("main.py.tmpl")
+	t := template.New(TEMPLATE_FILE)
 
-	t, err := t.ParseFiles("main.py.tmpl")
+	t, err := t.ParseFiles(TEMPLATE_FILE)
 	if err != nil {
 		fmt.Println("Error parsing templates:", err)
 		return "", err
@@ -169,7 +171,7 @@ func create_glb(model_code string, filename string) (string, error) {
 		Filename:  filename,
 	}
 
-	err = t.ExecuteTemplate(&buf, "main.py.tmpl", data)
+	err = t.ExecuteTemplate(&buf, TEMPLATE_FILE, data)
 	if err != nil {
 		fmt.Println("Error executing template:", err)
 		return "", err
