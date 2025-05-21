@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -100,6 +101,9 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 	blenderOutput := string(output)
 	if err != nil || strings.Contains(blenderOutput, "Traceback") || strings.Contains(blenderOutput, "Error:") {
 		log.Printf("Command execution failed: %v, Output: %s", err, blenderOutput)
+		if err == nil {
+			err = errors.New("Python error")
+		}
 		errorResponse := struct {
 			Error      string `json:"error"`
 			BlenderLog string `json:"blender_log"`
