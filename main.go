@@ -95,8 +95,20 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("blender", "-b", "--python", tmpFile.Name())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf("Command execution failed: %v, Output: %s", err, string(output))
-		http.Error(w, fmt.Sprintf("Command execution failed: %v", err), http.StatusInternalServerError)
+		blenderError := string(output)
+		log.Printf("Command execution failed: %v, Output: %s", err, blenderError)
+		errorResponse := struct {
+			Error      string `json:"error"`
+			BlenderLog string `json:"blender_log"`
+			ExitCode   string `json:"exit_code"`
+		}{
+			Error:      "Blender render failed",
+			BlenderLog: blenderError,
+			ExitCode:   err.Error(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(errorResponse)
 		return
 	}
 
@@ -104,7 +116,16 @@ func handleCreateModel(w http.ResponseWriter, r *http.Request) {
 
 	if _, err := os.Stat(tempFilePath); os.IsNotExist(err) {
 		log.Printf("Error: GLB file was not created at %s", tempFilePath)
-		http.Error(w, "Failed to generate GLB file", http.StatusInternalServerError)
+		errorResponse := struct {
+			Error   string `json:"error"`
+			Details string `json:"details"`
+		}{
+			Error:   "Failed to generate GLB file",
+			Details: "The Blender process completed but did not generate a model file. This typically indicates an error in the model code.",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(errorResponse)
 		return
 	}
 
