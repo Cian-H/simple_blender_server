@@ -15,3 +15,14 @@ following command:
 ```sh
 curl -X POST http://localhost:1212/create_model -H "Content-Type: application/json" -d '{"model_code":"def model(): bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, location=(0, 0, 0)); return bpy.context.object"}' --output model.glb
 ```
+
+# Included libraries
+
+The modelling environment includes the following libraries to facilitate modelling:
+
+- bpy
+- bmesh
+- mathutils
+- numpy
+- scipy
+- trimesh
