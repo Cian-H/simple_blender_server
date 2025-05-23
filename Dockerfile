@@ -7,7 +7,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o server ./main.go
 
 FROM alpine:latest
 RUN apk update
-RUN apk add blender py3-pip
+RUN apk add blender curl py3-pip
 RUN pip install --root-user-action ignore --break-system-packages numpy scipy trimesh
 RUN apk del py3-pip
 
