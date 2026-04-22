@@ -26,20 +26,22 @@ def export_to_glb(obj: bpy.types.Object):
     Parameters:
         obj (bpy.types.Object): The object to export
     """
-    # Ensure the object is the only object, is selected, and is active
-    bpy.ops.object.select_all(action="SELECT")
-    obj.select_set(False)
-    bpy.ops.object.delete()
+    # Ensure the scene is in Object Mode before altering selection
+    if bpy.context.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+    # Deselect all objects, select only the target object, and make it active
+    bpy.ops.object.select_all(action="DESELECT")
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
 
+    # Export using use_selection=True to avoid deleting the rest of the scene
     bpy.ops.export_scene.gltf(
         filepath="{{.Filename}}",
         export_format="GLB",
-        # export_draco_mesh_compression_enable=True,
+        use_selection=True,
         export_apply=True,
     )
-
 
 def main():
     export_to_glb(guarded_model())
